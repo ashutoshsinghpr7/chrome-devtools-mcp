@@ -25,10 +25,15 @@ Object.defineProperty(globalThis, 'Node', {
   enumerable: true,
 });
 
-// Polyfill window to point to globalThis for browser-only APIs like window.setTimeout
-Object.defineProperty(globalThis, 'window', {
-  value: globalThis,
-  writable: true,
-  configurable: true,
-  enumerable: true,
-});
+import * as WorkerThreads from 'node:worker_threads';
+
+// Polyfill window to point to globalThis for browser-only APIs like window.setTimeout.
+// Do not define it inside worker threads so that DevTools' HostRuntime correctly selects the Node.js worker implementation.
+if (WorkerThreads.isMainThread) {
+  Object.defineProperty(globalThis, 'window', {
+    value: globalThis,
+    writable: true,
+    configurable: true,
+    enumerable: true,
+  });
+}
