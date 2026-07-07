@@ -212,12 +212,15 @@ export class UniverseManager {
 }
 
 const DEFAULT_FACTORY: TargetUniverseFactoryFn = async (page: Page) => {
-  const registeredSettings = DevTools.Common.SettingRegistration.getRegisteredSettings();
+  const registeredSettings =
+    DevTools.Common.SettingRegistration.getRegisteredSettings();
   const hasOverridesEnabled = registeredSettings.some(
     setting => setting.settingName === 'persistence-network-overrides-enabled',
   );
   if (!hasOverridesEnabled) {
-    console.log('[DevtoolsUtils] Registering persistence-network-overrides-enabled');
+    console.log(
+      '[DevtoolsUtils] Registering persistence-network-overrides-enabled',
+    );
     DevTools.Common.Settings.registerSettingExtension({
       category: DevTools.Common.Settings.SettingCategory.PERSISTENCE,
       settingName: 'persistence-network-overrides-enabled',
@@ -236,6 +239,19 @@ const DEFAULT_FACTORY: TargetUniverseFactoryFn = async (page: Page) => {
       settingName: 'network-log.record-log',
       settingType: DevTools.Common.Settings.SettingType.BOOLEAN,
       defaultValue: true,
+    });
+  }
+
+  const hasPreserveLog = registeredSettings.some(
+    setting => setting.settingName === 'network-log.preserve-log',
+  );
+  if (!hasPreserveLog) {
+    console.log('[DevtoolsUtils] Registering network-log.preserve-log');
+    DevTools.Common.Settings.registerSettingExtension({
+      category: DevTools.Common.Settings.SettingCategory.NETWORK,
+      settingName: 'network-log.preserve-log',
+      settingType: DevTools.Common.Settings.SettingType.BOOLEAN,
+      defaultValue: false,
     });
   }
 
