@@ -222,6 +222,9 @@ const DEFAULT_FACTORY: TargetUniverseFactoryFn = async (page: Page) => {
         DevTools.Common.SettingRegistration.getRegisteredSettings(),
     },
     overrideAutoStartModels: new Set([DevTools.DebuggerModel]),
+    hostConfig: {},
+    inspectorFrontendHost:
+      DevTools.Host.InspectorFrontendHost.InspectorFrontendHostInstance,
   });
 
   const session = await page.createCDPSession();
