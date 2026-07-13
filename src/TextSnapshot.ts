@@ -23,6 +23,7 @@ export class TextSnapshot {
 
   root: TextSnapshotNode;
   idToNode: Map<string, TextSnapshotNode>;
+  backendNodeIdToNode: Map<number, TextSnapshotNode>;
   snapshotId: string;
   selectedElementUid?: string;
   hasSelectedElement: boolean;
@@ -31,6 +32,7 @@ export class TextSnapshot {
   constructor(data: {
     root: TextSnapshotNode;
     idToNode: Map<string, TextSnapshotNode>;
+    backendNodeIdToNode: Map<number, TextSnapshotNode>;
     snapshotId: string;
     selectedElementUid?: string;
     hasSelectedElement: boolean;
@@ -38,6 +40,7 @@ export class TextSnapshot {
   }) {
     this.root = data.root;
     this.idToNode = data.idToNode;
+    this.backendNodeIdToNode = data.backendNodeIdToNode;
     this.snapshotId = data.snapshotId;
     this.selectedElementUid = data.selectedElementUid;
     this.hasSelectedElement = data.hasSelectedElement;
@@ -67,6 +70,7 @@ export class TextSnapshot {
     // will be used for the tree serialization and mapping ids back to nodes.
     let idCounter = 0;
     const idToNode = new Map<string, TextSnapshotNode>();
+    const backendNodeIdToNode = new Map<number, TextSnapshotNode>();
     const seenUniqueIds = new Set<string>();
     const seenBackendNodeIds = new Set<number>();
 
@@ -106,6 +110,9 @@ export class TextSnapshot {
       }
 
       idToNode.set(nodeWithId.id, nodeWithId);
+      if (backendNodeId !== undefined) {
+        backendNodeIdToNode.set(backendNodeId, nodeWithId);
+      }
       return nodeWithId;
     };
 
@@ -114,6 +121,7 @@ export class TextSnapshot {
     await TextSnapshot.insertExtraNodes(
       page,
       idToNode,
+      backendNodeIdToNode,
       seenUniqueIds,
       snapshotId,
       idCounter,
@@ -126,6 +134,7 @@ export class TextSnapshot {
       root: rootNodeWithId,
       snapshotId: String(snapshotId),
       idToNode,
+      backendNodeIdToNode,
       hasSelectedElement: false,
       verbose,
     });
@@ -153,18 +162,8 @@ export class TextSnapshot {
       logger?.('no cdpBackendNodeId');
       return;
     }
-    // TODO: index by backendNodeId instead.
-    const queue = [this.root];
-    while (queue.length) {
-      const current = queue.pop()!;
-      if (current.backendNodeId === cdpBackendNodeId) {
-        return current.id;
-      }
-      for (const child of current.children) {
-        queue.push(child);
-      }
-    }
-    return;
+    const node = this.backendNodeIdToNode.get(cdpBackendNodeId);
+    return node?.id;
   }
 
   // ExtraHandles represent DOM nodes which might not be part of the accessibility tree, e.g. DOM nodes
@@ -173,6 +172,7 @@ export class TextSnapshot {
   private static async insertExtraNodes(
     page: McpPage,
     idToNode: Map<string, TextSnapshotNode>,
+    backendNodeIdToNode: Map<number, TextSnapshotNode>,
     seenUniqueIds: Set<string>,
     snapshotId: number,
     idCounter: number,
@@ -331,6 +331,9 @@ export class TextSnapshot {
         continue;
       }
       idToNode.set(extraNode.id, extraNode);
+      if (extraNode.backendNodeId !== undefined) {
+        backendNodeIdToNode.set(extraNode.backendNodeId, extraNode);
+      }
       const attachTarget = (await findAncestorNode(handle)) || rootNodeWithId;
       const descendantIds = await findDescendantNodes(extraNode.backendNodeId);
       reorgInfo.push({extraNode, attachTarget, descendantIds});
